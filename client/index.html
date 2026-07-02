@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex,notranslate">
+<meta name="googlebot" content="noindex,nofollow,noarchive,nosnippet,noimageindex">
+<meta name="bingbot" content="noindex,nofollow,noarchive,nosnippet">
+<title>廣告成效報表</title>
+<style>
+  :root {
+    color-scheme: light;
+    --bg:#f3f1ec; --side:#faf5ee; --line:#e7e2d6; --line-strong:#d7cfbf;
+    --text:#1f1d1a; --muted:#887f70; --soft:#fbfaf5; --orange:#d97706;
+    --orange-dark:#b8620a; --green:#16a34a; --blue:#1f6feb; --purple:#7c3aed;
+    --red:#dc2626; --brown:#a36a4f; --shadow:0 4px 16px rgba(31,29,26,.06);
+  }
+  * { box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body {
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC","Microsoft JhengHei",sans-serif;
+    background:var(--bg); color:var(--text); line-height:1.5;
+  }
+  button { font:inherit; color:inherit; }
+  .app { min-height:100vh; display:flex; }
+  .sidebar {
+    width:240px; flex:0 0 240px; background:var(--side); border-right:1px solid var(--line);
+    position:sticky; top:0; height:100vh; overflow:auto; padding:28px 0 18px;
+  }
+  .brand { padding:0 24px 22px; border-bottom:1px solid var(--line); }
+  .brand h1 { font-size:15px; margin:0 0 4px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .brand p { font-size:11.5px; color:var(--muted); margin:0; }
+  .sb-nav { padding:16px 14px; }
+  .sb-label {
+    font-size:10px; color:#afa28e; text-transform:uppercase; letter-spacing:.06em;
+    padding:0 10px; margin:14px 0 8px; font-weight:700;
+  }
+  .sb-label:first-child { margin-top:0; }
+  .sb-tab {
+    width:100%; appearance:none; border:0; background:transparent; text-align:left;
+    padding:9px 14px; border-radius:7px; color:#4f473b; font-size:13.5px;
+    font-weight:600; cursor:pointer; margin:2px 0; transition:background .15s, box-shadow .15s, color .15s;
+  }
+  .sb-tab:hover { background:#f0e8d9; }
+  .sb-tab.active { background:#fff; color:var(--text); box-shadow:0 1px 4px rgba(0,0,0,.05); font-weight:800; }
+  .sb-footer { margin-top:26px; padding:16px 24px 0; border-top:1px solid var(--line); font-size:11px; color:var(--muted); }
+  .updated-time { color:#5b5347; font-weight:700; margin-top:2px; }
+  .main { flex:1; min-width:0; padding:28px 36px 42px; overflow-x:auto; }
+  .tab-content { display:none; }
+  .tab-content.active { display:block; }
+  .page-head { margin-bottom:18px; }
+  .page-title { font-size:24px; font-weight:850; margin:0 0 6px; letter-spacing:0; }
+  .page-subtitle { font-size:13px; color:var(--muted); margin:0; }
+  .card {
+    background:#fff; border:1px solid var(--line); border-radius:10px; padding:22px 26px;
+    margin-bottom:16px; box-shadow:0 1px 0 rgba(31,29,26,.02);
+  }
+  .card h2 { margin:0 0 14px; font-size:14px; line-height:1.45; font-weight:800; display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
+  .hint { font-size:11px; color:#9b9284; font-weight:500; }
+  .kpi-row { display:grid; grid-template-columns:repeat(3,1fr); gap:24px; padding:18px 0 12px; border-bottom:1px solid var(--line); }
+  .kpi-label { color:#766d60; font-size:12px; margin-bottom:4px; }
+  .kpi-value { font-size:31px; font-weight:900; letter-spacing:.01em; }
+  .green { color:var(--green); } .blue { color:var(--blue); } .orange { color:var(--orange); }
+  .purple { color:var(--purple); } .red { color:var(--red); } .brown { color:var(--brown); }
+  .metric-line { padding-top:14px; color:#403a31; font-size:13px; display:flex; gap:26px; flex-wrap:wrap; }
+  .metric-line strong { font-size:14px; }
+  .chart-wrap { height:260px; position:relative; }
+  canvas { width:100%; height:100%; display:block; }
+  .legend { display:flex; justify-content:center; gap:18px; color:#6b6258; font-size:12px; margin-top:8px; flex-wrap:wrap; }
+  .legend span { display:inline-flex; align-items:center; gap:6px; }
+  .swatch { width:28px; height:12px; border:1px solid rgba(31,29,26,.15); display:inline-block; }
+  .spend { background:#b8c6b9; } .reach { background:#aab8c8; } .ctr { background:var(--orange); }
+  .month-card {
+    width:100%; appearance:none; background:#fff; border:2px solid var(--orange); border-radius:10px;
+    padding:22px 26px; text-align:left; cursor:pointer; margin:10px 0 18px;
+  }
+  .month-card:hover { box-shadow:var(--shadow); }
+  .mc-head { display:flex; align-items:center; justify-content:space-between; gap:20px; margin-bottom:22px; }
+  .mc-title { font-size:20px; font-weight:900; }
+  .arrow { color:#8f8678; font-size:18px; }
+  .mc-stats { display:grid; grid-template-columns:repeat(5,1fr); gap:24px; }
+  .mc-stat span { display:block; color:#887f70; font-size:11px; margin-bottom:4px; }
+  .mc-stat strong { font-size:18px; font-weight:900; }
+  .two-cols { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .mini-card { border:1px solid var(--line); border-radius:10px; padding:16px; background:var(--soft); margin-bottom:10px; }
+  .mini-card > div:first-child span, .mini-grid span { display:block; color:#887f70; font-size:11px; margin-bottom:3px; }
+  .mini-card strong { display:block; font-size:16px; margin-bottom:12px; }
+  .mini-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px 14px; }
+  .mini-grid b { font-size:15px; }
+  .advice { list-style:none; margin:0; padding:0; display:grid; gap:10px; }
+  .advice li { display:grid; grid-template-columns:96px 1fr; gap:12px; align-items:start; padding:11px 0; border-top:1px solid var(--line); }
+  .advice li:first-child { border-top:0; }
+  .advice strong { color:var(--orange-dark); }
+  .advice span { color:#4f473b; font-size:13px; line-height:1.65; }
+  .table-wrap { overflow:auto; border:1px solid var(--line); border-radius:10px; }
+  table { width:100%; border-collapse:collapse; min-width:980px; background:#fff; }
+  th,td { padding:10px 12px; border-bottom:1px solid #f1ede2; text-align:right; white-space:nowrap; font-size:12.5px; }
+  th:first-child,td:first-child { text-align:left; min-width:300px; }
+  th { background:#faf6ec; color:#6b6258; font-size:11.5px; }
+  td strong { display:block; max-width:390px; white-space:normal; line-height:1.35; }
+  td span { display:block; color:#968b7c; font-size:11px; margin-top:3px; }
+  .toast {
+    position:fixed; right:20px; bottom:20px; background:#1f1d1a; color:#fff; padding:10px 13px;
+    border-radius:8px; box-shadow:var(--shadow); opacity:0; transform:translateY(8px); pointer-events:none; transition:.18s;
+    font-size:13px; z-index:20;
+  }
+  .toast.show { opacity:1; transform:translateY(0); }
+  @media (max-width:900px) {
+    .app { display:block; }
+    .sidebar { position:static; width:100%; height:auto; padding:18px 0 10px; border-right:0; border-bottom:1px solid var(--line); }
+    .sb-nav { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; padding:12px 16px; }
+    .sb-label { display:none; }
+    .sb-footer { margin-top:0; padding:12px 16px; }
+    .main { padding:20px 16px 34px; }
+    .kpi-row,.mc-stats,.two-cols { grid-template-columns:1fr; }
+  }
+  @media (max-width:560px) {
+    .main { padding:20px 12px 30px; }
+    .page-title { font-size:21px; }
+    .card { padding:18px 16px; }
+    .kpi-value { font-size:24px; }
+    .chart-wrap { height:220px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <h1>廣告成效報表</h1>
+      <p>流量＋互動廣告月報</p>
+    </div>
+    <nav class="sb-nav" aria-label="主選單">
+      <div class="sb-label">分析</div>
+      <button class="sb-tab active" data-tab="overview" type="button">成效總覽</button>
+      <button class="sb-tab" data-tab="monthly" type="button">每月成效</button>
+    </nav>
+    <div class="sb-footer">
+      <div>幣別：TWD（自動換算）</div>
+      <div class="updated-time">17 列有效</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <section class="tab-content active" id="tab-overview">
+      <div class="page-head">
+        <h1 class="page-title">廣告成效總覽</h1>
+        <p class="page-subtitle">年度累計、月度趨勢、各月詳細成效</p>
+      </div>
+
+      <section class="card">
+        <h2>2026 年累計（1 個月）</h2>
+        <div class="kpi-row">
+          <div class="kpi green">
+            <div class="kpi-label">總花費</div>
+            <div class="kpi-value">$18,664</div>
+          </div>
+
+          <div class="kpi blue">
+            <div class="kpi-label">總觸及</div>
+            <div class="kpi-value">88,906</div>
+          </div>
+
+          <div class="kpi orange">
+            <div class="kpi-label">整體連結點閱率</div>
+            <div class="kpi-value">3.29%</div>
+          </div></div>
+        <div class="metric-line">
+          <span>成果 <strong>5,116</strong></span>
+          <span>點擊 / 新追蹤者 <strong>4,808 / 271</strong></span>
+          <span>單次點擊 / 追蹤成本 <strong>$4 / $4</strong></span>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>月度趨勢 <span class="hint">花費 / 觸及 / 連結點閱率</span></h2>
+        <div class="chart-wrap">
+          <canvas id="trendChart" data-spend="18664.0" data-reach="88906.0" data-ctr="3.290693933980795"></canvas>
+        </div>
+        <div class="legend">
+          <span><i class="swatch spend"></i>花費（TWD）</span>
+          <span><i class="swatch reach"></i>觸及</span>
+          <span><i class="swatch ctr"></i>連結點閱率（%）</span>
+        </div>
+      </section>
+
+      <button class="month-card" type="button" data-tab-jump="monthly">
+        <div class="mc-head">
+          <div class="mc-title">2026 年 6 月</div>
+          <div class="arrow">→</div>
+        </div>
+        <div class="mc-stats">
+              <div class="mc-stat">
+                <span>花費</span>
+                <strong class="green">$18,664</strong>
+              </div>
+
+              <div class="mc-stat">
+                <span>觸及</span>
+                <strong class="blue">88,906</strong>
+              </div>
+
+              <div class="mc-stat">
+                <span>點擊次數</span>
+                <strong class="purple">4,808</strong>
+              </div>
+
+              <div class="mc-stat">
+                <span>新追蹤者</span>
+                <strong class="brown">271</strong>
+              </div>
+
+              <div class="mc-stat">
+                <span>單次成本</span>
+                <strong class="red">$4</strong>
+              </div></div>
+      </button>
+    </section>
+
+    <section class="tab-content" id="tab-monthly">
+      <div class="page-head">
+        <h1 class="page-title">每月成效</h1>
+        <p class="page-subtitle">廣告組合與素材個別分析</p>
+      </div>
+
+      <section class="card">
+        <h2>2026 年 6 月重點</h2>
+        <div class="two-cols">
+          <div>
+            <article class="mini-card">
+              <div>
+                <span>投放項目</span>
+                <strong>互動-粉專按讚</strong>
+              </div>
+              <div class="mini-grid">
+                <div><span>花費</span><b>$14,863</b></div>
+                <div><span>成果</span><b>4,228</b></div>
+                <div><span>點擊</span><b>3,794</b></div>
+                <div><span>每次成果</span><b>$4</b></div>
+              </div>
+            </article>
+
+            <article class="mini-card">
+              <div>
+                <span>投放項目</span>
+                <strong>流量-LINE導流</strong>
+              </div>
+              <div class="mini-grid">
+                <div><span>花費</span><b>$3,801</b></div>
+                <div><span>成果</span><b>888</b></div>
+                <div><span>點擊</span><b>1,014</b></div>
+                <div><span>每次成果</span><b>$4</b></div>
+              </div>
+            </article></div>
+          <ul class="advice"><li><strong>投放目標</strong><span>粉專每次成果成本較低，建議優先改為直接私訊粉專承接，減少導 LINE 的跳轉流失。</span></li>
+<li><strong>預算配置</strong><span>粉專按讚／追蹤可持續投放，但建議調降預算，把主要預算留給私訊轉換。</span></li>
+<li><strong>素材方向</strong><span>保留低 CPC、CTR 較高的素材；花費高但成果成本偏高的素材先降量觀察。</span></li></ul>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>廣告組合分析 <span class="hint">判斷預算保留、調整或移轉</span></h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>項目</th><th>花費</th><th>觸及</th><th>曝光</th><th>成果</th><th>每次成果</th><th>點擊</th><th>CTR</th><th>CPC</th><th>讚／追蹤</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                  <td><strong>導粉專_35-65_房產投資</strong><span>互動-粉專按讚 / 個人檔案瀏覽</span></td>
+                  <td>$14,863</td>
+                  <td>58,633</td>
+                  <td>108,358</td>
+                  <td>4,228</td>
+                  <td>$4</td>
+                  <td>3,794</td>
+                  <td>3.50%</td>
+                  <td>$4</td>
+                  <td>271（FB 206 / IG 65）</td>
+                </tr>
+
+                <tr>
+                  <td><strong>導LINE_35-65_房產投資</strong><span>流量-LINE導流 / 落地頁瀏覽</span></td>
+                  <td>$3,801</td>
+                  <td>30,273</td>
+                  <td>37,751</td>
+                  <td>888</td>
+                  <td>$4</td>
+                  <td>1,014</td>
+                  <td>2.69%</td>
+                  <td>$4</td>
+                  <td>-</td>
+                </tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>素材分析 <span class="hint">判斷素材續投、降量或替換</span></h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>素材</th><th>花費</th><th>觸及</th><th>曝光</th><th>成果</th><th>每次成果</th><th>點擊</th><th>CTR</th><th>CPC</th><th>讚／追蹤</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                  <td><strong>DANUBE - Greenz</strong><span>互動-粉專按讚 / 個人檔案瀏覽</span></td>
+                  <td>$4,630</td>
+                  <td>21,592</td>
+                  <td>35,892</td>
+                  <td>1,412</td>
+                  <td>$3</td>
+                  <td>1,197</td>
+                  <td>3.34%</td>
+                  <td>$4</td>
+                  <td>59（FB 41 / IG 18）</td>
+                </tr>
+
+                <tr>
+                  <td><strong>杜拜不就是一個獨立的國家嗎？</strong><span>互動-粉專按讚 / 個人檔案瀏覽</span></td>
+                  <td>$2,884</td>
+                  <td>16,272</td>
+                  <td>20,361</td>
+                  <td>846</td>
+                  <td>$3</td>
+                  <td>721</td>
+                  <td>3.54%</td>
+                  <td>$4</td>
+                  <td>93（FB 75 / IG 18）</td>
+                </tr>
+
+                <tr>
+                  <td><strong>杜拜現在不缺豪宅</strong><span>互動-粉專按讚 / 個人檔案瀏覽</span></td>
+                  <td>$2,437</td>
+                  <td>7,469</td>
+                  <td>10,821</td>
+                  <td>512</td>
+                  <td>$5</td>
+                  <td>484</td>
+                  <td>4.47%</td>
+                  <td>$5</td>
+                  <td>51（FB 30 / IG 21）</td>
+                </tr>
+
+                <tr>
+                  <td><strong>杜拜房市現在看的</strong><span>流量-LINE導流 / 落地頁瀏覽</span></td>
+                  <td>$1,597</td>
+                  <td>8,086</td>
+                  <td>12,515</td>
+                  <td>294</td>
+                  <td>$5</td>
+                  <td>320</td>
+                  <td>2.56%</td>
+                  <td>$5</td>
+                  <td>-</td>
+                </tr>
+
+                <tr>
+                  <td><strong>這幾年我在杜拜看房地產市場</strong><span>互動-粉專按讚 / 個人檔案瀏覽</span></td>
+                  <td>$1,398</td>
+                  <td>12,038</td>
+                  <td>15,472</td>
+                  <td>615</td>
+                  <td>$2</td>
+                  <td>633</td>
+                  <td>4.09%</td>
+                  <td>$2</td>
+                  <td>12（FB 12）</td>
+                </tr>
+
+                <tr>
+                  <td><strong>模範開發商 HRE</strong><span>互動-粉專按讚 / 個人檔案瀏覽</span></td>
+                  <td>$1,328</td>
+                  <td>8,638</td>
+                  <td>12,199</td>
+                  <td>423</td>
+                  <td>$3</td>
+                  <td>350</td>
+                  <td>2.87%</td>
+                  <td>$4</td>
+                  <td>19（FB 14 / IG 5）</td>
+                </tr>
+
+                <tr>
+                  <td><strong>即將開盤的物件</strong><span>互動-粉專按讚 / 個人檔案瀏覽</span></td>
+                  <td>$1,257</td>
+                  <td>5,396</td>
+                  <td>8,694</td>
+                  <td>179</td>
+                  <td>$7</td>
+                  <td>164</td>
+                  <td>1.89%</td>
+                  <td>$8</td>
+                  <td>14（FB 13 / IG 1）</td>
+                </tr>
+
+                <tr>
+                  <td><strong>這幾年我在杜拜看房地產市場</strong><span>流量-LINE導流 / 落地頁瀏覽</span></td>
+                  <td>$869</td>
+                  <td>7,991</td>
+                  <td>8,930</td>
+                  <td>309</td>
+                  <td>$3</td>
+                  <td>360</td>
+                  <td>4.03%</td>
+                  <td>$2</td>
+                  <td>-</td>
+                </tr>
+
+                <tr>
+                  <td><strong>杜拜精品兩房</strong><span>互動-粉專按讚 / 個人檔案瀏覽</span></td>
+                  <td>$695</td>
+                  <td>3,299</td>
+                  <td>3,878</td>
+                  <td>204</td>
+                  <td>$3</td>
+                  <td>168</td>
+                  <td>4.33%</td>
+                  <td>$4</td>
+                  <td>14（FB 13 / IG 1）</td>
+                </tr>
+
+                <tr>
+                  <td><strong>海外買房大家最擔心的就是售後服務</strong><span>流量-LINE導流 / 落地頁瀏覽</span></td>
+                  <td>$508</td>
+                  <td>4,118</td>
+                  <td>4,970</td>
+                  <td>113</td>
+                  <td>$4</td>
+                  <td>145</td>
+                  <td>2.92%</td>
+                  <td>$4</td>
+                  <td>-</td>
+                </tr>
+
+                <tr>
+                  <td><strong>即將開盤的物件</strong><span>流量-LINE導流 / 落地頁瀏覽</span></td>
+                  <td>$504</td>
+                  <td>6,669</td>
+                  <td>7,723</td>
+                  <td>92</td>
+                  <td>$5</td>
+                  <td>99</td>
+                  <td>1.28%</td>
+                  <td>$5</td>
+                  <td>-</td>
+                </tr>
+
+                <tr>
+                  <td><strong>海外投資讓大家擔心的一點</strong><span>流量-LINE導流 / 落地頁瀏覽</span></td>
+                  <td>$213</td>
+                  <td>1,684</td>
+                  <td>1,747</td>
+                  <td>38</td>
+                  <td>$6</td>
+                  <td>45</td>
+                  <td>2.58%</td>
+                  <td>$5</td>
+                  <td>-</td>
+                </tr>
+
+                <tr>
+                  <td><strong>買房保值的重點</strong><span>互動-粉專按讚 / 個人檔案瀏覽</span></td>
+                  <td>$185</td>
+                  <td>551</td>
+                  <td>763</td>
+                  <td>21</td>
+                  <td>$9</td>
+                  <td>61</td>
+                  <td>7.99%</td>
+                  <td>$3</td>
+                  <td>6（FB 5 / IG 1）</td>
+                </tr>
+
+                <tr>
+                  <td><strong>海外資產該怎麼選</strong><span>流量-LINE導流 / 落地頁瀏覽</span></td>
+                  <td>$110</td>
+                  <td>1,862</td>
+                  <td>1,866</td>
+                  <td>42</td>
+                  <td>$3</td>
+                  <td>45</td>
+                  <td>2.41%</td>
+                  <td>$2</td>
+                  <td>-</td>
+                </tr>
+
+                <tr>
+                  <td><strong>杜拜房市現在看的</strong><span>互動-粉專按讚 / 個人檔案瀏覽</span></td>
+                  <td>$49</td>
+                  <td>249</td>
+                  <td>278</td>
+                  <td>16</td>
+                  <td>$3</td>
+                  <td>16</td>
+                  <td>5.76%</td>
+                  <td>$3</td>
+                  <td>3（FB 3）</td>
+                </tr></tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+  const tabs = document.querySelectorAll("[data-tab]");
+  const panels = document.querySelectorAll(".tab-content");
+  function showTab(name) {
+    tabs.forEach(tab => tab.classList.toggle("active", tab.dataset.tab === name));
+    panels.forEach(panel => panel.classList.toggle("active", panel.id === "tab-" + name));
+  }
+  tabs.forEach(tab => tab.addEventListener("click", () => showTab(tab.dataset.tab)));
+  document.querySelectorAll("[data-tab-jump]").forEach(button => {
+    button.addEventListener("click", () => showTab(button.dataset.tabJump));
+  });
+
+  function drawChart() {
+    const canvas = document.getElementById("trendChart");
+    if (!canvas) return;
+    const spend = Number(canvas.dataset.spend || 0);
+    const reach = Number(canvas.dataset.reach || 0);
+    const ctr = Number(canvas.dataset.ctr || 0);
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    const ctx = canvas.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const w = rect.width;
+    const h = rect.height;
+    const pad = { left: 46, right: 28, top: 18, bottom: 34 };
+    const plotW = w - pad.left - pad.right;
+    const plotH = h - pad.top - pad.bottom;
+    ctx.clearRect(0, 0, w, h);
+    ctx.strokeStyle = "#e1ddd3";
+    ctx.fillStyle = "#6f675c";
+    ctx.font = "12px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif";
+    const maxValue = Math.max(spend, reach, 1);
+    for (let i = 0; i <= 5; i += 1) {
+      const y = pad.top + plotH * i / 5;
+      ctx.beginPath();
+      ctx.moveTo(pad.left, y);
+      ctx.lineTo(w - pad.right, y);
+      ctx.stroke();
+      const label = "$" + Math.round(maxValue * (5 - i) / 5 / 1000) + "k";
+      ctx.fillText(label, 4, y + 4);
+    }
+    const base = pad.top + plotH;
+    const center = pad.left + plotW / 2;
+    const barW = Math.min(260, plotW * 0.22);
+    function bar(x, value, color) {
+      const height = Math.max(4, plotH * value / maxValue);
+      ctx.fillStyle = color;
+      ctx.strokeStyle = "rgba(31,29,26,.18)";
+      ctx.beginPath();
+      ctx.roundRect(x - barW / 2, base - height, barW, height, 4);
+      ctx.fill();
+      ctx.stroke();
+    }
+    bar(center - barW * 0.65, spend, "rgba(184,198,185,.82)");
+    bar(center + barW * 0.65, reach, "rgba(170,184,200,.9)");
+    const dotY = pad.top + plotH * (1 - Math.min(ctr, 8) / 8);
+    ctx.fillStyle = "#d97706";
+    ctx.beginPath();
+    ctx.arc(center, dotY, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#6f675c";
+    ctx.textAlign = "center";
+    ctx.fillText("2026 年 6 月", center, h - 8);
+    ctx.textAlign = "left";
+  }
+  if (CanvasRenderingContext2D.prototype.roundRect === undefined) {
+    CanvasRenderingContext2D.prototype.roundRect = function(x, y, width, height, radius) {
+      this.moveTo(x + radius, y);
+      this.lineTo(x + width - radius, y);
+      this.quadraticCurveTo(x + width, y, x + width, y + radius);
+      this.lineTo(x + width, y + height - radius);
+      this.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+      this.lineTo(x + radius, y + height);
+      this.quadraticCurveTo(x, y + height, x, y + height - radius);
+      this.lineTo(x, y + radius);
+      this.quadraticCurveTo(x, y, x + radius, y);
+    };
+  }
+  window.addEventListener("resize", drawChart);
+  drawChart();
+</script>
+</body>
+</html>
